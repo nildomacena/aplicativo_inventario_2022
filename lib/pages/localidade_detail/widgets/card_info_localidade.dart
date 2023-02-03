@@ -1,4 +1,6 @@
 import 'package:aplicativo_inventario_2022/model/localidade.dart';
+import 'package:aplicativo_inventario_2022/pages/localidade_detail/localidade_detail_controller.dart';
+import 'package:aplicativo_inventario_2022/routes/app_routes.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,8 +10,8 @@ class CardInfoLocalidade extends StatelessWidget {
   final int qtdBens;
   final TextStyle textStyleDados =
       const TextStyle(fontSize: 18, fontWeight: FontWeight.w500);
-
-  const CardInfoLocalidade(
+  final LocalidadeDetailController controller = Get.find();
+  CardInfoLocalidade(
       {required this.localidade, required this.qtdBens, Key? key})
       : super(key: key);
 
@@ -53,7 +55,9 @@ class CardInfoLocalidade extends StatelessWidget {
                 children: [
                   OutlinedButton(
                     child: const Text('PANORÂMICAS'),
-                    onPressed: () {},
+                    onPressed: () {
+                      controller.goToPanoramicas();
+                    },
                   ),
                   const Padding(
                     padding: EdgeInsets.all(3),
@@ -64,11 +68,7 @@ class CardInfoLocalidade extends StatelessWidget {
                       maxLines: 1,
                     ),
                     onPressed: () async {
-                      /* Localidade result =
-                          await Get.to(RelatorioPage(localidade));
-                      setState(() {
-                        widget.localidade = result;
-                      }); */
+                      controller.goToFinalizarLocalidade();
                     },
                   ),
                 ],

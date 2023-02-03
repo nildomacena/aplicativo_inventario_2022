@@ -6,4 +6,6 @@ class Routes {
   static const meusAnuncios = '/meusAnuncios';
   static const contato = '/contato';
   static const adicionarBem = '/adicionarBem';
+  static const panoramicas = '/panoramicas';
+  static const finalizarLocalidade = '/finalizarLocalidade';
 }

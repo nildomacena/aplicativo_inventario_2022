@@ -66,6 +66,7 @@ class LoginController extends GetxController {
           cpf: cpfController.text,
           siape: siapeController.text,
           password: passwordController.text);
+      Get.offAllNamed(Routes.localidades);
     } catch (e) {
       if (e == 'user-already-exists') {
         UtilService.snackBarErro(
@@ -164,6 +165,7 @@ class LoginController extends GetxController {
     } on FirebaseException catch (e) {
       UtilService.snackBarErro(mensagem: UtilService.tratarErroFirebase(e));
     } catch (e) {
+      print(e);
       UtilService.snackBarErro(
           mensagem:
               'Erro durante o login. Verifique as informações e tente novamente.');

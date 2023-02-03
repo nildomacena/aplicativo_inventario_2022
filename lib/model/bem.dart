@@ -5,11 +5,11 @@ class Bem {
   final String id;
   final String? patrimonio;
   final bool semEtiqueta;
-  final String numeroSerie;
+  final String? numeroSerie;
   final String estadoBem;
   final bool bemParticular;
   final bool indicaDesfazimento;
-  final String observacoes;
+  final String? observacoes;
   final String localidadeId;
   final String campusId;
   final String imagem;

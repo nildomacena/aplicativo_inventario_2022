@@ -39,6 +39,16 @@ class LoginRepository {
 
       UserCredential userCredential =
           await authProvider.createUser(email: email, password: password);
+      if (userCredential.user == null) {
+        return throw 'pre-registration-not-exists';
+      }
+
+      firestoreProvider.createUser(
+          user: userCredential.user!,
+          uid: userCredential.user!.uid,
+          cpf: cpf,
+          siape: siape,
+          nome: nome);
       if (userCredential.user != null) {
         storeEmailAndPassword(email, password);
       }

@@ -1,12 +1,18 @@
 import 'dart:io';
 
+import 'package:aplicativo_inventario_2022/model/bem.dart';
+import 'package:aplicativo_inventario_2022/model/localidade.dart';
 import 'package:aplicativo_inventario_2022/pages/adicionar_bem/adicionar_bem_repository.dart';
 import 'package:aplicativo_inventario_2022/utils/util_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class AdicionarBemController extends GetxController {
   final AdicionarBemRepository repository;
+  GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  late Localidade localidade;
 
   File? image;
 
@@ -16,6 +22,8 @@ class AdicionarBemController extends GetxController {
   bool salvando = false;
   bool alterar =
       false; //Variável que verifica se a tela é para alterar algum bem já existente ou cadastrar um novo
+  String radioEstado = '';
+
   TextEditingController patrimonioController = TextEditingController();
   TextEditingController descricaoController = TextEditingController();
   TextEditingController numeroSerieController = TextEditingController();
@@ -26,14 +34,48 @@ class AdicionarBemController extends GetxController {
   FocusNode numeroSerieFocus = FocusNode();
   FocusNode observacoesFocus = FocusNode();
 
-  AdicionarBemController(this.repository);
+  Bem? bem;
+
+  AdicionarBemController(this.repository) {
+    if (Get.arguments != null) {
+      if (Get.arguments['bem'] != null) {
+        bem = Get.arguments['bem'];
+        patchFormBem();
+      }
+      if (Get.arguments['localidade'] == null) {
+        Get.back();
+        UtilService.snackBarErro(mensagem: 'Localidade não encontrada');
+      }
+      localidade = Get.arguments['localidade'];
+    } else {
+      Get.back();
+      UtilService.snackBarErro(mensagem: 'Localidade não encontrada');
+    }
+  }
+
+  patchFormBem() {
+    if (bem == null) return;
+    patrimonioController.text = bem!.patrimonio ?? '';
+    descricaoController.text = bem!.descricao;
+    numeroSerieController.text = bem!.numeroSerie ?? '';
+    observacoesController.text = bem!.observacoes ?? '';
+    radioEstado = bem!.estadoBem;
+    particular = bem!.bemParticular;
+    semEtiqueta = bem!.semEtiqueta;
+    desfazimento = bem!.indicaDesfazimento;
+  }
 
   onPatrimonioSubmit(String? string) {
     patrimonioFocus.unfocus();
     descricaoFocus.requestFocus();
+    onPatrimonioComplete();
   }
 
   onPatrimonioComplete() {
+    print('onPatrimonioComplete');
+    descricaoController.text =
+        utilService.buscarDescricao(patrimonioController.text) ?? '';
+
     /*  descricaoController.text =
         utilService.getDescricaoPorTombamento(patrimonioController.text); */
     /* Localidade localidade = await fireService
@@ -55,14 +97,32 @@ class AdicionarBemController extends GetxController {
                   } */
   }
 
-  validatorPatrimonio(String? patrimonio) {
-    if (patrimonio == null ||
-        patrimonio.isEmpty && !semEtiqueta && !particular) {
-      salvando = false;
-      update();
+  String? validatorPatrimonio(String? patrimonio) {
+    if ((patrimonio == null || patrimonio.isEmpty) &&
+        (!semEtiqueta && !particular)) {
+      // salvando = false;
+      // update();
       return "Digite o patrimônio do bem";
     }
     return null;
+  }
+
+  onChangeRadioButton(String? value) {
+    radioEstado = value ?? '';
+    update();
+  }
+
+  onChangeBemParticular([bool? value]) {
+    particular = value ?? !particular;
+    if (particular) {
+      patrimonioController.text = '';
+    }
+    update();
+  }
+
+  onChangeDesfazimento([bool? value]) {
+    desfazimento = value ?? !particular;
+    update();
   }
 
   getImage() async {
@@ -104,13 +164,147 @@ class AdicionarBemController extends GetxController {
   }
 
   scanQrCode() async {
+    if (kDebugMode) {
+      patrimonioController.text = '152025';
+      onPatrimonioComplete();
+      return;
+    }
     try {
       String qrCode = await UtilService.scanQrCode();
       patrimonioController.text = qrCode;
+      onPatrimonioComplete();
       update();
       print('qrCode: $qrCode');
     } catch (e) {
       UtilService.snackBarErro(mensagem: 'Erro ao scanear');
+    }
+  }
+
+  onSubmitForm() {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+    if (radioEstado.isEmpty) {
+      UtilService.snackBarErro(mensagem: 'Selecione o estado do bem');
+      return;
+    }
+    bem != null ? alterarBem() : cadastrarBem();
+  }
+
+  cadastrarBem() async {
+    if (image == null) {
+      UtilService.snackBarErro(mensagem: 'Selecione uma imagem');
+      return;
+    }
+    try {
+      print('object');
+      salvando = true;
+      update();
+      await repository.salvarBem(
+          file: image!,
+          localidade: localidade,
+          patrimonio: patrimonioController.text,
+          descricao: descricaoController.text,
+          numeroSerie: numeroSerieController.text,
+          estado: radioEstado,
+          observacoes: observacoesController.text,
+          particular: particular,
+          semEtiqueta: semEtiqueta,
+          desfazimento: desfazimento);
+      UtilService.snackBar(
+          titulo: 'Sucesso!',
+          mensagem: 'Cadastro de bem realizado com sucesso');
+      resetForm();
+    } catch (e) {
+      print('Erro ao salvar bem: $e');
+      UtilService.snackBarErro(
+          titulo: 'Erro ao cadastrar bem', mensagem: e.toString());
+    } finally {
+      salvando = false;
+      update();
+    }
+  }
+
+  alterarBem() async {
+    if (bem == null) {
+      return;
+    }
+
+    try {
+      salvando = true;
+      update();
+      await repository.updateBem(
+          bem: bem!,
+          file: image,
+          localidade: localidade,
+          patrimonio: patrimonioController.text,
+          descricao: descricaoController.text,
+          numeroSerie: numeroSerieController.text,
+          estado: radioEstado,
+          observacoes: observacoesController.text,
+          particular: particular,
+          semEtiqueta: semEtiqueta,
+          desfazimento: desfazimento);
+      Get.back();
+      UtilService.snackBar(
+          titulo: 'Sucesso!',
+          mensagem: 'Cadastro de bem realizado com sucesso');
+      resetForm();
+    } catch (e) {
+      print('Erro ao salvar bem: $e');
+      UtilService.snackBarErro(
+          titulo: 'Erro ao cadastrar bem', mensagem: e.toString());
+    } finally {
+      salvando = false;
+      update();
+    }
+  }
+
+  resetForm() {
+    image = null;
+    patrimonioController.text = '';
+    descricaoController.text = '';
+    numeroSerieController.text = '';
+    observacoesController.text = '';
+    radioEstado = '';
+    particular = false;
+    semEtiqueta = false;
+    desfazimento = false;
+    update();
+  }
+
+  excluirBem() async {
+    if (bem == null) return;
+    bool? result = await Get.dialog(AlertDialog(
+      title: const Text('Confirmação'),
+      content: const Text(
+          'Deseja realmente excluir essa imagem?\nEssa ação é irreversível.'),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Get.back();
+          },
+          child: const Text('CANCELAR'),
+        ),
+        TextButton(
+          onPressed: () {
+            Get.back(result: true);
+          },
+          child: const Text('EXCLUIR'),
+        ),
+      ],
+    ));
+    if (result == null) return;
+
+    try {
+      await repository.excluirBem(localidade: localidade, bem: bem!);
+      Get.back();
+      UtilService.snackBar(titulo: 'Bem excluído com sucesso', mensagem: '');
+    } catch (e) {
+      print(e);
+      UtilService.snackBarErro(
+          mensagem:
+              'Erro ao excluir bem. Verifique se o mesmo foi excluído e tente novamente');
     }
   }
 }

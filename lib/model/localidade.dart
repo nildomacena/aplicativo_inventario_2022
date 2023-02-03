@@ -10,6 +10,7 @@ class Localidade {
   Status? status;
   String
       panoramica; //Alterar para array quando o mesmo estiver sendo salvo no banco de dados
+  List<dynamic> panoramicas;
   List<Bem> bens;
   String? imagemRelatorio;
   String? observacoes;
@@ -20,6 +21,7 @@ class Localidade {
       required this.panoramica,
       required this.bens,
       required this.status,
+      required this.panoramicas,
       this.imagemRelatorio,
       this.observacoes}) {
     if (status == null && bens.isEmpty) {
@@ -46,20 +48,25 @@ class Localidade {
     if (data['status'] == null) {
       status = bens.isNotEmpty ? Status.em_andamento : Status.nao_iniciado;
     }
-    return Localidade(
-        nome: data['nome'],
-        panoramica: data['panoramica'],
-        imagemRelatorio: data['imagemRelatorio'] ?? '',
-        observacoes: data['observacoes'] ?? '',
-        status: status ??
-            (data['status'] == 2
-                ? Status.finalizado
-                : data['status'] == 1
-                    ? Status.em_andamento
-                    : Status.nao_iniciado),
-        id: snapshot.id,
-        campusId: campusId,
-        bens: bens);
+    try {
+      return Localidade(
+          nome: data['nome'],
+          panoramica: data['panoramica'],
+          panoramicas: data['panoramicas'] ?? <String>[],
+          imagemRelatorio: data['imagemRelatorio'] ?? '',
+          observacoes: data['observacoes'] ?? '',
+          status: status ??
+              (data['status'] == 2
+                  ? Status.finalizado
+                  : data['status'] == 1
+                      ? Status.em_andamento
+                      : Status.nao_iniciado),
+          id: snapshot.id,
+          campusId: campusId,
+          bens: bens);
+    } catch (e) {
+      throw {'localidade': data['nome'], 'error': e};
+    }
   }
 
   bool get possuiImagemRelatorio {
@@ -84,6 +91,7 @@ class Localidade {
     return Localidade(
         nome: data['nome'],
         panoramica: data['panoramica'],
+        panoramicas: data['panoramicas'] as List<String>? ?? <String>[],
         status: status ??
             (data['status'] == 2
                 ? Status.finalizado

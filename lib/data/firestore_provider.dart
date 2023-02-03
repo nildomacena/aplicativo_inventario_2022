@@ -3,9 +3,11 @@ import 'package:aplicativo_inventario_2022/model/bem.dart';
 import 'package:aplicativo_inventario_2022/model/localidade.dart';
 import 'package:aplicativo_inventario_2022/model/usuario.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreProvider {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<bool> checkIfUserExists(
       {required String cpf, required String siape}) async {
@@ -29,7 +31,8 @@ class FirestoreProvider {
   }
 
   Future<dynamic> createUser(
-      {required String uid,
+      {required User user,
+      required String uid,
       required String cpf,
       required String siape,
       required String nome}) async {
@@ -50,6 +53,7 @@ class FirestoreProvider {
       'campusNome': 'Benedito Bentes',
       'confirmado': true,
       'cpf': cpf,
+      'email': user.email,
       'dataPreCadastro': preCadastro['dataPreCadastro'],
       'dataSignup': FieldValue.serverTimestamp(),
       'idPreCadastro': snapshotPreCadastro.docs.first.id,
@@ -65,12 +69,26 @@ class FirestoreProvider {
     return Usuario.fromFirestore(snapshot);
   }
 
+  Future<Usuario?> getUsuario() async {
+    User? user = _auth.currentUser;
+    if (user == null) return null;
+    DocumentSnapshot snapshot =
+        await _firestore.doc('usuarios/${user.uid}').get();
+    return Usuario.fromFirestore(snapshot);
+  }
+
   Future<List<Localidade>> getLocalidades() async {
     QuerySnapshot<Map<String, dynamic>> querySnapshot =
         (await _firestore.collection('${Constants.pathBB}/localidades').get());
     return querySnapshot.docs
         .map((s) => Localidade.fromFirestore(s, Constants.idCampusBB))
         .toList();
+  }
+
+  Future<Localidade> getLocalidadeById(String id) async {
+    return Localidade.fromFirestore(
+        await _firestore.doc('${Constants.pathBB}/localidades/$id').get(),
+        Constants.idCampusBB);
   }
 
   Future<List<Bem>> getBensPorLocalidadeId(String localidadeId) async {

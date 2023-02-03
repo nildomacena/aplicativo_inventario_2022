@@ -37,7 +37,7 @@ class LocalidadesPage extends StatelessWidget {
                   width: MediaQuery.of(context).size.width * 8,
                   child: TextField(
                     autofocus: false,
-                    controller: TextEditingController(),
+                    controller: controller.searchController,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(
@@ -49,7 +49,7 @@ class LocalidadesPage extends StatelessWidget {
                 ListView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
-                    itemCount: controller.localidades!.length,
+                    itemCount: controller.localidadesFiltradas!.length,
                     itemBuilder: (context, index) {
                       Localidade localidade =
                           controller.localidadesFiltradas![index];
